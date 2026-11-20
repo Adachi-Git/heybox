@@ -1,0 +1,5 @@
+node_modules/
+account.env
+raw.txt
+reqable-cert/
+*.log

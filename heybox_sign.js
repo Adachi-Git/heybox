@@ -450,8 +450,9 @@ async function runAccount(account, runtime) {
   const done = new Set();
   const failed = new Set();
   // 支持所有已实现的任务类型（每日任务 + time_limit 任务）
+  // 签到 + 分享/限时任务；游戏评价(24)会发公开内容，不执行
   const allTasks = snapshot.tasks.filter(
-    (task) => isDailyTask(task) || TASK_HANDLERS[task.taskId],
+    (task) => isSignTask(task) || ["1", "19", "31", "33"].includes(task.taskId),
   );
   for (const task of allTasks) {
     if (task.state === FINISH_STATE) {
@@ -500,7 +501,9 @@ async function runAccount(account, runtime) {
     `任务汇总: 完成${done.size}个${waiting.length ? `，未完成${waiting.length}个` : ""}${failed.size ? `，执行失败${failed.size}个` : ""}，当前H币=${snapshot.coin || "未知"}`,
     { notify: true },
   );
-  return { ok: waiting.length === 0 && failed.size === 0, doneCount: done.size };
+  const signTasks = finalTasks.filter(isSignTask);
+  const signOk = signTasks.length > 0 && signTasks.every((task) => task.state === FINISH_STATE);
+  return { ok: signOk, doneCount: done.size };
 }
 
 async function run() {
