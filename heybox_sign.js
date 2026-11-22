@@ -283,16 +283,22 @@ async function executeSign(client) {
   const firstState = tools.toText(signResp?.result?.state);
   if (firstState === "ignore") return { ok: true, message: "今日已签到" };
   await tools.sleep(800);
-  const finalPayload = await client.getJson(PATH_STATE);
-  const status = tools.toText(finalPayload?.status);
-  const result = finalPayload?.result || {};
-  const state = tools.toText(result.state);
-  if (status === OK_STATE && (state === OK_STATE || state === "ignore")) {
-    const parts = [];
-    if (result.sign_in_coin) parts.push(`+${result.sign_in_coin}H币`);
-    if (result.sign_in_exp) parts.push(`+${result.sign_in_exp}经验`);
-    if (result.sign_in_streak) parts.push(`连签${result.sign_in_streak}天`);
-    return { ok: true, message: parts.length ? parts.join(" ") : "签到完成" };
+  let finalPayload = null;
+  let state = "";
+  let result = {};
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    finalPayload = await client.getJson(PATH_STATE);
+    const status = tools.toText(finalPayload?.status);
+    result = finalPayload?.result || {};
+    state = tools.toText(result.state);
+    if (status === OK_STATE && (state === OK_STATE || state === "ignore")) {
+      const parts = [];
+      if (result.sign_in_coin) parts.push(`+${result.sign_in_coin}H币`);
+      if (result.sign_in_exp) parts.push(`+${result.sign_in_exp}经验`);
+      if (result.sign_in_streak) parts.push(`连签${result.sign_in_streak}天`);
+      return { ok: true, message: parts.length ? parts.join(" ") : "签到完成" };
+    }
+    if (attempt < 3) await tools.sleep(2000);
   }
   return { ok: false, message: responseFailure(tools.toText(finalPayload?.msg) || state || "签到失败", finalPayload) };
 }
